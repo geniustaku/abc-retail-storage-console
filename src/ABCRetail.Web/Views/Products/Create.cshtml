@@ -1,0 +1,100 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model Product
+@{
+    ViewData["Title"] = "Add product";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Products</a> &middot; New</div>
+        <h1>Add a product</h1>
+        <p class="lede">
+            One submission touches both storage services: the record is written to the Products
+            table and the image is uploaded to the product-images blob container.
+        </p>
+    </div>
+</div>
+
+<form method="post" asp-action="Create" enctype="multipart/form-data" class="form-card">
+    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+    <div class="form-section">
+        <h3>Catalogue entry</h3>
+        <p class="note">Category becomes the partition key, so it determines where the entity is stored.</p>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="ProductName"></label>
+                <input asp-for="ProductName" />
+                <span asp-validation-for="ProductName" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="PartitionKey"></label>
+                <select asp-for="PartitionKey">
+                    <option value="">Select a category</option>
+                    @foreach (var category in Product.Categories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+                <span asp-validation-for="PartitionKey" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="field">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" placeholder="What the customer is buying, in a sentence or two."></textarea>
+            <span asp-validation-for="Description" class="field-error"></span>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Pricing and stock</h3>
+        <p class="note">Table Storage has no decimal type, so the price is persisted as a double.</p>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="Price"></label>
+                <input asp-for="Price" type="number" step="0.01" min="0.01" />
+                <span asp-validation-for="Price" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="StockLevel"></label>
+                <input asp-for="StockLevel" type="number" step="1" min="0" />
+                <span asp-validation-for="StockLevel" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Product image</h3>
+        <p class="note">JPG, PNG, WEBP or GIF up to 5 MB. Stored as a blob and served directly from its blob URL.</p>
+
+        <div class="uploader">
+            <div class="preview" id="preview">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="m21 15-5-5L5 21" />
+                </svg>
+            </div>
+            <div>
+                <input type="file" name="image" id="image" accept="image/jpeg,image/png,image/webp,image/gif" />
+                <div class="field-error">@Html.ValidationMessage("image")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save to Azure</button>
+        <a class="btn btn--ghost" asp-action="Index">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/image-preview.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,35 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Something went wrong";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Error</div>
+        <h1>That request could not be completed</h1>
+        <p class="lede">
+            The request did not reach a usable result. If it involved a write to Azure, check the
+            storage account before retrying so the same record is not created twice.
+        </p>
+    </div>
+    <div class="head-actions">
+        <a class="btn btn--primary" asp-controller="Home" asp-action="Index">Back to dashboard</a>
+    </div>
+</div>
+
+@if (Model?.ShowRequestId ?? false)
+{
+    <div class="panel">
+        <div class="panel-body">
+            <div class="kv" style="border-bottom:none">
+                <dt>Request identifier</dt>
+                <dd class="mono" style="font-size:13px">@Model!.RequestId</dd>
+            </div>
+        </div>
+    </div>
+}

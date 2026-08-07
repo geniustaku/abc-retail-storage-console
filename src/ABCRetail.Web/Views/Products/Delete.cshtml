@@ -1,0 +1,60 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model Product
+@{
+    ViewData["Title"] = "Delete product";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Products</a> &middot; Delete</div>
+        <h1>Delete this product</h1>
+    </div>
+</div>
+
+<div class="confirm">
+    <div class="confirm-head">
+        <h2>@Model.ProductName</h2>
+        <p>
+            The entity will be removed from the Products table and, if one exists, its image will
+            be deleted from the product-images blob container. Neither service keeps a recoverable
+            copy once the delete completes.
+        </p>
+    </div>
+
+    <div class="panel-body" style="padding-top:6px">
+        @if (Model.HasImage)
+        {
+            <div class="uploader" style="border-style:solid;margin-bottom:16px">
+                <div class="preview"><img src="@Model.ImageUrl" alt="@Model.ProductName" /></div>
+                <div>
+                    <div class="cell-primary">Blob to be removed</div>
+                    <div class="mono">@Model.ImageBlobName</div>
+                </div>
+            </div>
+        }
+
+        <div class="kv">
+            <dt>Category (partition key)</dt>
+            <dd class="mono" style="font-size:13px">@Model.PartitionKey</dd>
+        </div>
+        <div class="kv">
+            <dt>Row key</dt>
+            <dd class="mono" style="font-size:13px">@Model.RowKey</dd>
+        </div>
+        <div class="kv" style="border-bottom:none">
+            <dt>Stock on hand</dt>
+            <dd>@Model.StockLevel units at @Money.Format(Model.Price)</dd>
+        </div>
+    </div>
+
+    <form method="post" asp-action="Delete" class="form-actions" style="border-radius:0 0 10px 10px">
+        <input type="hidden" name="category" value="@Model.PartitionKey" />
+        <input type="hidden" name="id" value="@Model.RowKey" />
+        <button type="submit" class="btn btn--danger">Delete permanently</button>
+        <a class="btn btn--ghost" asp-action="Index">Keep product</a>
+    </form>
+</div>

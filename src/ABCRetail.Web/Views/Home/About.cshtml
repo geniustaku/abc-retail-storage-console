@@ -1,0 +1,93 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@{
+    ViewData["Title"] = "Storage design";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Design Rationale</div>
+        <h1>How storage is laid out</h1>
+        <p class="lede">
+            The decisions behind the schema, and why each one suits the way ABC Retail
+            actually reads and writes this data.
+        </p>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-body prose">
+        <h2>Why Table Storage</h2>
+        <p>
+            ABC Retail's relational database struggled under seasonal load because every read
+            competed with every write on the same server. Table Storage removes that ceiling by
+            partitioning data across storage nodes, and it charges per gigabyte rather than per
+            provisioned instance. The trade is a narrower query surface: there are no joins, no
+            aggregate functions and no secondary indexes, so the key design has to carry the weight
+            that indexes would carry elsewhere.
+        </p>
+
+        <h2>CustomerProfiles</h2>
+        <p>
+            Every customer sits in one partition, <code>CUSTOMER</code>, with a generated GUID as
+            the row key. At profile volumes a single partition is comfortable, and keeping the table
+            that way means any group of customers can still be written in one entity group
+            transaction, since those are scoped to a partition. If the customer base outgrew a single
+            partition server, region would be the natural key to split on, because fulfilment queries
+            are already regional.
+        </p>
+        <p>
+            Search is applied after the read rather than in the query, because Table Storage has no
+            contains operator. That is honest at this scale and would be replaced by a search index
+            at a larger one.
+        </p>
+
+        <h2>Products</h2>
+        <p>
+            Category is the partition key. The catalogue is browsed one category at a time far more
+            often than it is read whole, so this turns the dominant query into a single-partition
+            scan instead of a full table scan, and it spreads writes across partition servers during
+            a bulk catalogue load. The cost is that moving a product between categories changes its
+            identity, which is why the edit path performs a delete and an insert rather than an
+            update in place.
+        </p>
+        <p>
+            Prices are stored as <code>Double</code>. Table Storage has no decimal type, so anything
+            performing real money arithmetic would convert on read rather than accumulate in
+            floating point.
+        </p>
+
+        <h2>Blob Storage for imagery</h2>
+        <p>
+            Images never enter the table. Table Storage caps an entity at one megabyte and a property
+            at sixty-four kilobytes, so imagery belongs in Blob Storage regardless. The table holds
+            the blob URL and the blob name, the first so a view can point an image tag straight at it,
+            the second so the blob can be replaced or removed when the product changes.
+        </p>
+        <p>
+            The container grants anonymous read at blob level. That lets the browser fetch each image
+            directly from the storage account instead of routing bytes through the web application,
+            which keeps thumbnails off the App Service compute budget entirely. Shared access
+            signatures would be the alternative where the imagery was not already public, at the cost
+            of a signing round trip per image.
+        </p>
+
+        <h2>Ordering of writes</h2>
+        <p>
+            When a product is created the blob is uploaded before the table entity is written, and
+            when one is deleted the blob is removed before the entity. Failing partway through leaves
+            an unreferenced blob rather than a catalogue entry pointing at an image that does not
+            exist, which is the cheaper of the two failures to clean up.
+        </p>
+
+        <h2>Where this goes next</h2>
+        <p>
+            The storage services sit behind interfaces resolved through dependency injection, so the
+            queue and file share work that follows is additive. Neither the controllers nor the views
+            hold a reference to an Azure SDK type.
+        </p>
+    </div>
+</div>

@@ -1,0 +1,115 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model Product
+@{
+    ViewData["Title"] = "Edit product";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Products</a> &middot; Edit</div>
+        <h1>@Model.ProductName</h1>
+        <p class="lede">
+            Row key <span class="mono">@Model.RowKey</span> in partition
+            <span class="mono">@Model.PartitionKey</span>.
+        </p>
+    </div>
+</div>
+
+<form method="post" asp-action="Edit" enctype="multipart/form-data" class="form-card">
+    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+    <input type="hidden" asp-for="RowKey" />
+    <input type="hidden" name="originalCategory" value="@Model.PartitionKey" />
+
+    <div class="form-section">
+        <h3>Catalogue entry</h3>
+        <p class="note">
+            Changing the category moves the entity to a different partition, which Table Storage
+            handles as a delete and an insert rather than an update in place.
+        </p>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="ProductName"></label>
+                <input asp-for="ProductName" />
+                <span asp-validation-for="ProductName" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="PartitionKey"></label>
+                <select asp-for="PartitionKey">
+                    @foreach (var category in Product.Categories)
+                    {
+                        <option value="@category" selected="@(category == Model.PartitionKey)">@category</option>
+                    }
+                </select>
+                <span asp-validation-for="PartitionKey" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="field">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description"></textarea>
+            <span asp-validation-for="Description" class="field-error"></span>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Pricing and stock</h3>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="Price"></label>
+                <input asp-for="Price" type="number" step="0.01" min="0.01" />
+                <span asp-validation-for="Price" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="StockLevel"></label>
+                <input asp-for="StockLevel" type="number" step="1" min="0" />
+                <span asp-validation-for="StockLevel" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Product image</h3>
+        <p class="note">
+            Leave this empty to keep the current image. Uploading a replacement writes the new blob
+            first and then removes the old one.
+        </p>
+
+        <div class="uploader">
+            <div class="preview" id="preview">
+                @if (Model.HasImage)
+                {
+                    <img src="@Model.ImageUrl" alt="@Model.ProductName" />
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="m21 15-5-5L5 21" />
+                    </svg>
+                }
+            </div>
+            <div>
+                <input type="file" name="image" id="image" accept="image/jpeg,image/png,image/webp,image/gif" />
+                <div class="field-error">@Html.ValidationMessage("image")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save changes</button>
+        <a class="btn btn--ghost" asp-action="Index">Cancel</a>
+        <span class="spacer"></span>
+        <a class="btn btn--sm btn--ghost" asp-action="Delete" asp-route-category="@Model.PartitionKey" asp-route-id="@Model.RowKey">Delete product</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/image-preview.js" asp-append-version="true"></script>
+}

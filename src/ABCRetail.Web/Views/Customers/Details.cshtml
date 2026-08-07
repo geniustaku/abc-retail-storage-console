@@ -1,0 +1,79 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model CustomerProfile
+@{
+    ViewData["Title"] = Model.FullName;
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Customers</a> &middot; Profile</div>
+        <div class="identity" style="margin-top:6px">
+            <div class="avatar avatar--lg">@Model.Initials</div>
+            <div>
+                <h1>@Model.FullName</h1>
+                <p class="lede" style="margin-top:2px">@Model.Email</p>
+            </div>
+        </div>
+    </div>
+    <div class="head-actions">
+        <a class="btn" asp-action="Edit" asp-route-id="@Model.RowKey">Edit</a>
+        <a class="btn btn--ghost" asp-action="Delete" asp-route-id="@Model.RowKey">Delete</a>
+    </div>
+</div>
+
+<div class="split">
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Profile detail</h2>
+        </div>
+        <div class="panel-body">
+            <dl class="detail-grid" style="margin:0">
+                <div class="kv">
+                    <dt>Contact number</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "Not supplied" : Model.PhoneNumber)</dd>
+                </div>
+                <div class="kv">
+                    <dt>Registered</dt>
+                    <dd>@Model.RegisteredOn.ToLocalTime().ToString("d MMMM yyyy")</dd>
+                </div>
+                <div class="kv">
+                    <dt>Shipping address</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.ShippingAddress) ? "Not supplied" : Model.ShippingAddress)</dd>
+                </div>
+                <div class="kv">
+                    <dt>City and postal code</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.City) ? "Not supplied" : $"{Model.City} {Model.PostalCode}".Trim())</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Storage record</h2>
+            <span class="hint">Azure Table Storage</span>
+        </div>
+        <div class="panel-body">
+            <div class="kv">
+                <dt>Table</dt>
+                <dd class="mono" style="font-size:13px">CustomerProfiles</dd>
+            </div>
+            <div class="kv">
+                <dt>Partition key</dt>
+                <dd class="mono" style="font-size:13px">@Model.PartitionKey</dd>
+            </div>
+            <div class="kv">
+                <dt>Row key</dt>
+                <dd class="mono" style="font-size:13px">@Model.RowKey</dd>
+            </div>
+            <div class="kv" style="border-bottom:none">
+                <dt>Last written</dt>
+                <dd class="mono" style="font-size:13px">@(Model.Timestamp?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "—")</dd>
+            </div>
+        </div>
+    </div>
+</div>

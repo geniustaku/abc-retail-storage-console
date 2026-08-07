@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ABCRetail.Web/ABCRetail.Web.csproj" />
+  </Folder>
+</Solution>

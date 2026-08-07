@@ -1,0 +1,111 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model IReadOnlyList<CustomerProfile>
+@{
+    ViewData["Title"] = "Customers";
+    var search = ViewData["Search"] as string;
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Azure Table Storage &middot; CustomerProfiles</div>
+        <h1>Customer profiles</h1>
+        <p class="lede">
+            Each row is one entity in the CustomerProfiles table, partitioned under
+            <span class="mono">CUSTOMER</span> and keyed by a generated row key.
+        </p>
+    </div>
+    <div class="head-actions">
+        <form class="search" method="get" asp-action="Index">
+            <input type="text" name="search" value="@search" placeholder="Name, email or city" aria-label="Search customers" />
+            <button class="btn btn--sm" type="submit">Search</button>
+            @if (!string.IsNullOrWhiteSpace(search))
+            {
+                <a class="btn btn--sm btn--ghost" asp-action="Index">Clear</a>
+            }
+        </form>
+        <a class="btn btn--primary" asp-action="Create">Register customer</a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <h2>@Model.Count profile@(Model.Count == 1 ? "" : "s")</h2>
+        <span class="hint">Sorted by surname</span>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+            </svg>
+            <h3>@(string.IsNullOrWhiteSpace(search) ? "No customer profiles yet" : "Nothing matched that search")</h3>
+            <p>
+                @(string.IsNullOrWhiteSpace(search)
+                    ? "Registering a customer writes a new entity to the CustomerProfiles table in Azure."
+                    : "Try a different name, email address or city.")
+            </p>
+            @if (string.IsNullOrWhiteSpace(search))
+            {
+                <a class="btn btn--primary" asp-action="Create">Register customer</a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Contact</th>
+                        <th>Location</th>
+                        <th>Registered</th>
+                        <th class="right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var customer in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="identity">
+                                    <div class="avatar">@customer.Initials</div>
+                                    <div>
+                                        <div class="cell-primary">
+                                            <a asp-action="Details" asp-route-id="@customer.RowKey">@customer.FullName</a>
+                                        </div>
+                                        <div class="cell-sub">@customer.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(customer.PhoneNumber) ? "—" : customer.PhoneNumber)</td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(customer.City))
+                                {
+                                    <span class="cell-sub">—</span>
+                                }
+                                else
+                                {
+                                    <span>@customer.City</span>
+                                    <div class="cell-sub">@customer.PostalCode</div>
+                                }
+                            </td>
+                            <td class="cell-sub">@customer.RegisteredOn.ToLocalTime().ToString("d MMM yyyy")</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="btn btn--sm btn--ghost" asp-action="Edit" asp-route-id="@customer.RowKey">Edit</a>
+                                    <a class="btn btn--sm btn--ghost" asp-action="Delete" asp-route-id="@customer.RowKey">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

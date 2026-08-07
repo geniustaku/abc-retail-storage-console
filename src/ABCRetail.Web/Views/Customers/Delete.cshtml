@@ -1,0 +1,47 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model CustomerProfile
+@{
+    ViewData["Title"] = "Delete customer";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Customers</a> &middot; Delete</div>
+        <h1>Delete this profile</h1>
+    </div>
+</div>
+
+<div class="confirm">
+    <div class="confirm-head">
+        <h2>@Model.FullName</h2>
+        <p>
+            The entity will be removed from the CustomerProfiles table in Azure Table Storage.
+            Table Storage keeps no history of deleted entities, so this cannot be undone.
+        </p>
+    </div>
+
+    <div class="panel-body" style="padding-top:6px">
+        <div class="kv">
+            <dt>Email</dt>
+            <dd>@Model.Email</dd>
+        </div>
+        <div class="kv">
+            <dt>Row key</dt>
+            <dd class="mono" style="font-size:13px">@Model.RowKey</dd>
+        </div>
+        <div class="kv" style="border-bottom:none">
+            <dt>Registered</dt>
+            <dd>@Model.RegisteredOn.ToLocalTime().ToString("d MMMM yyyy")</dd>
+        </div>
+    </div>
+
+    <form method="post" asp-action="Delete" class="form-actions" style="border-radius:0 0 10px 10px">
+        <input type="hidden" name="id" value="@Model.RowKey" />
+        <button type="submit" class="btn btn--danger">Delete permanently</button>
+        <a class="btn btn--ghost" asp-action="Index">Keep profile</a>
+    </form>
+</div>

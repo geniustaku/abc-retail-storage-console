@@ -1,0 +1,95 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model CustomerProfile
+@{
+    ViewData["Title"] = "Edit customer";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Customers</a> &middot; Edit</div>
+        <h1>@Model.FullName</h1>
+        <p class="lede">
+            Row key <span class="mono">@Model.RowKey</span> in partition
+            <span class="mono">@Model.PartitionKey</span>.
+        </p>
+    </div>
+</div>
+
+<form method="post" asp-action="Edit" class="form-card">
+    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+    <input type="hidden" asp-for="RowKey" />
+    <input type="hidden" asp-for="PartitionKey" />
+
+    <div class="form-section">
+        <h3>Identity</h3>
+        <p class="note">Changes are written back with a replace operation, so cleared fields are cleared in the table.</p>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="FirstName"></label>
+                <input asp-for="FirstName" autocomplete="given-name" />
+                <span asp-validation-for="FirstName" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Surname"></label>
+                <input asp-for="Surname" autocomplete="family-name" />
+                <span asp-validation-for="Surname" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Contact</h3>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" type="email" autocomplete="email" />
+                <span asp-validation-for="Email" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="PhoneNumber"></label>
+                <input asp-for="PhoneNumber" type="tel" autocomplete="tel" />
+                <span asp-validation-for="PhoneNumber" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Delivery</h3>
+
+        <div class="field">
+            <label asp-for="ShippingAddress"></label>
+            <input asp-for="ShippingAddress" autocomplete="street-address" />
+            <span asp-validation-for="ShippingAddress" class="field-error"></span>
+        </div>
+
+        <div class="grid-2">
+            <div class="field">
+                <label asp-for="City"></label>
+                <input asp-for="City" autocomplete="address-level2" />
+                <span asp-validation-for="City" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="PostalCode"></label>
+                <input asp-for="PostalCode" autocomplete="postal-code" />
+                <span asp-validation-for="PostalCode" class="field-error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save changes</button>
+        <a class="btn btn--ghost" asp-action="Index">Cancel</a>
+        <span class="spacer"></span>
+        <a class="btn btn--sm btn--ghost" asp-action="Delete" asp-route-id="@Model.RowKey">Delete profile</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

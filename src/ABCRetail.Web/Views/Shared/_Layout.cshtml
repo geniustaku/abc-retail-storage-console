@@ -1,0 +1,103 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+
+    string NavState(string target, string? targetAction = null)
+    {
+        var match = string.Equals(controller, target, StringComparison.OrdinalIgnoreCase)
+            && (targetAction is null || string.Equals(action, targetAction, StringComparison.OrdinalIgnoreCase));
+        return match ? "active" : string.Empty;
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] &middot; ABC Retail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="shell">
+        <aside class="rail">
+            <div class="rail-brand">
+                <a asp-controller="Home" asp-action="Index" style="text-decoration:none">
+                    <span class="mark">ABC<em>.</em>Retail</span>
+                </a>
+                <span class="sub">Storage Console</span>
+            </div>
+
+            <nav class="rail-nav">
+                <div class="rail-label">Overview</div>
+                <a class="@NavState("Home", "Index")" asp-controller="Home" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" />
+                        <rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" />
+                    </svg>
+                    Dashboard
+                </a>
+
+                <div class="rail-label">Table Storage</div>
+                <a class="@NavState("Customers")" asp-controller="Customers" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Customers
+                </a>
+                <a class="@NavState("Products")" asp-controller="Products" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <path d="M3.27 6.96 12 12.01l8.73-5.05" /><path d="M12 22.08V12" />
+                    </svg>
+                    Products
+                </a>
+
+                <div class="rail-label">Reference</div>
+                <a class="@NavState("Home", "About")" asp-controller="Home" asp-action="About">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 10a6 6 0 0 0-11.6-2A4 4 0 0 0 6 16h11a4 4 0 0 0 1-7.87Z" />
+                    </svg>
+                    Storage Design
+                </a>
+            </nav>
+
+            <div class="rail-foot">
+                <strong>Genius Mhirizhonga</strong>
+                CLDV7112 &middot; Cloud Development B<br />
+                <span class="dot"></span>Azure South Africa North
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="page">
+                @if (TempData["Message"] is string message)
+                {
+                    <div class="flash" role="status">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" />
+                        </svg>
+                        <span>@message</span>
+                    </div>
+                }
+
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    @* jQuery only. The validation libraries load per page through _ValidationScriptsPartial,
+       so pages without a form do not pay for them. *@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

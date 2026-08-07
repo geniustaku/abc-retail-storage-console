@@ -1,0 +1,188 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Order Processing Platform</div>
+        <h1>Storage Console</h1>
+        <p class="lede">
+            Customer profiles and the product catalogue are held in Azure Table Storage, while
+            product imagery is served from Azure Blob Storage. Every figure below is read live
+            from the <span class="mono">@Model.StorageAccountName</span> storage account.
+        </p>
+    </div>
+    <div class="head-actions">
+        <a class="btn" asp-controller="Customers" asp-action="Create">New customer</a>
+        <a class="btn btn--primary" asp-controller="Products" asp-action="Create">New product</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+            </svg>
+            Customer profiles
+        </div>
+        <div class="value">@Model.CustomerCount</div>
+        <div class="foot">Entities in the CustomerProfiles table</div>
+    </div>
+
+    <div class="stat">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <path d="M3.27 6.96 12 12.01l8.73-5.05" />
+            </svg>
+            Catalogue items
+        </div>
+        <div class="value">@Model.ProductCount</div>
+        <div class="foot">Entities in the Products table</div>
+    </div>
+
+    <div class="stat">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="m21 15-5-5L5 21" />
+            </svg>
+            Stored images
+        </div>
+        <div class="value">@Model.ImageCount</div>
+        <div class="foot">Blobs in the product-images container</div>
+    </div>
+
+    <div class="stat stat--accent">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+            Inventory value
+        </div>
+        <div class="value">@Money.FormatWhole(Model.InventoryValue)</div>
+        <div class="foot">Price multiplied by stock on hand</div>
+    </div>
+</div>
+
+<div class="split">
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Recent catalogue additions</h2>
+            <a class="btn btn--sm btn--ghost" asp-controller="Products" asp-action="Index">View all</a>
+        </div>
+
+        @if (Model.RecentProducts.Count == 0)
+        {
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                </svg>
+                <h3>The catalogue is empty</h3>
+                <p>Add a product to write your first entity to the Products table and upload an image to Blob Storage.</p>
+                <a class="btn btn--primary" asp-controller="Products" asp-action="Create">Add a product</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th class="right">Price</th>
+                            <th class="right">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in Model.RecentProducts)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="identity">
+                                        <div class="thumb thumb--sm">
+                                            @if (product.HasImage)
+                                            {
+                                                <img src="@product.ImageUrl" alt="@product.ProductName" loading="lazy" />
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="cell-primary">
+                                                <a asp-controller="Products" asp-action="Details"
+                                                   asp-route-category="@product.PartitionKey" asp-route-id="@product.RowKey">@product.ProductName</a>
+                                            </div>
+                                            <div class="cell-sub">Added @product.CreatedOn.ToLocalTime().ToString("d MMM yyyy")</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="tag">@product.PartitionKey</span></td>
+                                <td class="right">@Money.Format(product.Price)</td>
+                                <td class="right">@product.StockLevel</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Newest customers</h2>
+            <a class="btn btn--sm btn--ghost" asp-controller="Customers" asp-action="Index">View all</a>
+        </div>
+
+        @if (Model.RecentCustomers.Count == 0)
+        {
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                </svg>
+                <h3>No profiles yet</h3>
+                <p>Register a customer to create the first entity in the CustomerProfiles table.</p>
+                <a class="btn btn--primary" asp-controller="Customers" asp-action="Create">Register a customer</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>City</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var customer in Model.RecentCustomers)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="identity">
+                                        <div class="avatar">@customer.Initials</div>
+                                        <div>
+                                            <div class="cell-primary">
+                                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@customer.RowKey">@customer.FullName</a>
+                                            </div>
+                                            <div class="cell-sub">@customer.Email</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(customer.City) ? "—" : customer.City)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
