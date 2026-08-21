@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: abcretail-gm-cldv7112
+  AZURE_WEBAPP_NAME: st10541838
   DOTNET_VERSION: "10.0.x"
   PROJECT_PATH: src/ABCRetail.Web/ABCRetail.Web.csproj
 
@@ -43,4 +43,13 @@ jobs:
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
+
+      # The original hostname is kept in service because the Task 1 and Task 2
+      # submissions link to it, so both sites are deployed from the same build.
+      - name: Deploy to the original hostname
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: abcretail-gm-cldv7112
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_LEGACY }}
           package: ./publish
