@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8"/>
 <title>CLDV7112 ICE Task 2 - Genius Mhirizhonga</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400..700&display=swap"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap"/>
 <style>
   @page { size: A4; margin: 18mm 16mm; }
   * { box-sizing: border-box; }
   body { margin:0; font-family:Inter,Helvetica,Arial,sans-serif; font-size:10.5pt;
          line-height:1.62; color:#17191c; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  h1,h2,h3 { font-family:Fraunces,Georgia,serif; letter-spacing:-.015em; margin:0; }
+  h1,h2,h3 { font-family:Inter,Helvetica,Arial,sans-serif; letter-spacing:-.022em; margin:0; }
   a { color:#a8492a; text-decoration:none; }
   code { font-family:ui-monospace,Menlo,monospace; font-size:9pt; background:#f2f0ec;
           border:1px solid #e6e3dd; border-radius:3px; padding:0 4px; }
@@ -20,7 +20,7 @@
   .cover .module { font-size:9.5pt; letter-spacing:.19em; text-transform:uppercase;
                     color:#858b93; font-weight:600; }
   .cover h1 { font-size:40pt; line-height:1.06; margin:16px 0 10px; }
-  .cover .sub { font-size:14pt; color:#4a4f57; font-family:Fraunces,Georgia,serif; }
+  .cover .sub { font-size:14pt; color:#4a4f57; font-family:inherit; font-weight:450; }
   .cover .spacer { flex:1; }
   .idbox { border-top:1.5px solid #17191c; padding-top:20px;
             display:grid; grid-template-columns:1fr 1fr; gap:22px 40px; }
@@ -383,17 +383,6 @@
   </p>
 </section>
 
-<section>
-  <div class="eyebrow">Section 9</div>
-  <h2>Securing the storage key</h2>
-  <p>
-    The repository is public and the storage account key appears nowhere in it, which was verified
-    against every commit rather than only the working tree. Locally the key sits in .NET user
-    secrets, outside the project directory; in Azure it is the App Service application setting
-    <code>ConnectionStrings__AzureStorage</code>. Queues and Files use the same connection string as
-    Tables and Blobs, so this task added no new secret.
-  </p>
-</section>
 
 </body>
 </html>
