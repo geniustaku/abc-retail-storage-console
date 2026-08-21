@@ -83,11 +83,61 @@
             exist, which is the cheaper of the two failures to clean up.
         </p>
 
+        <h2>Azure Queues for order and inventory work</h2>
+        <p>
+            Two queues carry the work the application generates. <code>order-processing</code> holds
+            orders waiting to be picked and dispatched; <code>inventory-management</code> holds
+            catalogue and stock movements, including image uploads. Splitting them means a backlog of
+            catalogue edits cannot delay a customer's order, and either can be given its own consumer
+            later without touching the other.
+        </p>
+        <p>
+            The queue is not a log of what already happened. Placing an order writes it to the Orders
+            table as Submitted and queues a message; the order only completes, and stock only moves,
+            once that message is taken off the queue. This is what lets a seasonal burst queue up
+            instead of overwhelming the system, which is the failure ABC Retail's legacy middleware
+            kept producing.
+        </p>
+        <p>
+            A message body is a string, so each one carries JSON holding a readable description for
+            the operator alongside the reference a consumer needs. One message therefore serves both
+            the monitoring screen and the processing code without a second lookup.
+        </p>
+        <p>
+            Receiving a message hides it for a visibility timeout rather than deleting it; it is
+            deleted only once the work has succeeded. A consumer that fails part way through leaves
+            the message to reappear and be retried. That is at-least-once delivery, not exactly-once,
+            which is why the order handler checks whether an order is already complete before acting
+            on it rather than assuming each message arrives once.
+        </p>
+
+        <h2>Azure Files for logs</h2>
+        <p>
+            Every action is appended to a daily log file on the <code>application-logs</code> file
+            share. A file share was chosen over a blob container because it is a real SMB file
+            system: it can be mounted as a drive on a server or a workstation and read with ordinary
+            tools, which is what an operations team actually wants from a log. Generated inventory
+            reports are written to the same share under a separate directory.
+        </p>
+        <p>
+            Azure Files has no append operation of its own, unlike an append blob. Adding a line means
+            reading the file's current length, growing it by the size of the new bytes, and writing
+            those bytes into the range that growth created. That sequence is not atomic, so writers
+            are serialised within the application. Across several instances the correct answer would
+            be a lease on the file; on the single instance this runs on, serialising is enough.
+        </p>
+        <p>
+            Logging never takes a request down with it. A failure writing to the share is reported to
+            the platform log and the user's action is allowed to complete, because a customer losing
+            their order because the log file was busy would be the worse outcome.
+        </p>
+
         <h2>Where this goes next</h2>
         <p>
-            The storage services sit behind interfaces resolved through dependency injection, so the
-            queue and file share work that follows is additive. Neither the controllers nor the views
-            hold a reference to an Azure SDK type.
+            All four storage services sit behind interfaces resolved through dependency injection.
+            Neither the controllers nor the views hold a reference to an Azure SDK type, so replacing
+            the in-application queue consumer with a background worker or an Azure Function would
+            require no change to anything that produces the messages.
         </p>
     </div>
 </div>

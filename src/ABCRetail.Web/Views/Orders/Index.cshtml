@@ -1,0 +1,87 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model IReadOnlyList<Order>
+@{
+    ViewData["Title"] = "Orders";
+    var pending = Model.Count(o => !o.IsComplete);
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Azure Table Storage &middot; Orders &nbsp;|&nbsp; Queue &middot; order-processing</div>
+        <h1>Customer orders</h1>
+        <p class="lede">
+            Placing an order writes it to the Orders table and queues a work item. It stays
+            Submitted until that message is taken off the queue on the
+            <a asp-controller="Queues" asp-action="Index">queue monitor</a>.
+        </p>
+    </div>
+    <div class="head-actions">
+        @if (pending > 0)
+        {
+            <a class="btn" asp-controller="Queues" asp-action="Index">@pending awaiting processing</a>
+        }
+        <a class="btn btn--primary" asp-action="Create">Place an order</a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-head">
+        <h2>@Model.Count order@(Model.Count == 1 ? "" : "s")</h2>
+        <span class="hint">Newest first</span>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            <h3>No orders yet</h3>
+            <p>Placing an order queues a message on order-processing and writes a line to the log file.</p>
+            <a class="btn btn--primary" asp-action="Create">Place an order</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Item</th>
+                        <th class="right">Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="cell-primary">
+                                    <a asp-action="Details" asp-route-id="@order.RowKey">@order.OrderNumber</a>
+                                </div>
+                                <div class="cell-sub">@order.PlacedOn.ToLocalTime().ToString("d MMM yyyy HH:mm")</div>
+                            </td>
+                            <td>@order.CustomerName</td>
+                            <td>
+                                <div>@order.ProductName</div>
+                                <div class="cell-sub">@order.Quantity x @Money.Format(order.UnitPrice)</div>
+                            </td>
+                            <td class="right">@Money.Format(order.TotalPrice)</td>
+                            <td>
+                                <span class="badge @(order.IsComplete ? "badge--done" : "badge--pending")">@order.Status</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

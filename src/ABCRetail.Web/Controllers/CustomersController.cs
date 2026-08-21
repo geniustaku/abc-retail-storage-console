@@ -14,10 +14,12 @@ namespace ABCRetail.Web.Controllers;
 public class CustomersController : Controller
 {
     private readonly ITableStorageService<CustomerProfile> _customers;
+    private readonly IActivityRecorder _activity;
 
-    public CustomersController(ITableStorageService<CustomerProfile> customers)
+    public CustomersController(ITableStorageService<CustomerProfile> customers, IActivityRecorder activity)
     {
         _customers = customers;
+        _activity = activity;
     }
 
     public async Task<IActionResult> Index(string? search, CancellationToken cancellationToken)
@@ -62,6 +64,11 @@ public class CustomersController : Controller
         customer.RegisteredOn = DateTimeOffset.UtcNow;
 
         await _customers.AddAsync(customer, cancellationToken);
+
+        // Registering a customer creates no work for a consumer, so it is logged to the file
+        // share without a queue message. Only things something must act on are queued.
+        await _activity.LogAsync("INFO",
+            $"Customer profile created: {customer.FullName} ({customer.Email})", cancellationToken);
 
         TempData["Message"] = $"{customer.FullName} was written to the CustomerProfiles table.";
         return RedirectToAction(nameof(Index));
@@ -111,6 +118,8 @@ public class CustomersController : Controller
     public async Task<IActionResult> DeleteConfirmed(string id, CancellationToken cancellationToken)
     {
         await _customers.DeleteAsync(CustomerProfile.Partition, id, cancellationToken);
+
+        await _activity.LogAsync("WARN", $"Customer profile deleted: row key {id}", cancellationToken);
 
         TempData["Message"] = "Customer profile removed from the CustomerProfiles table.";
         return RedirectToAction(nameof(Index));

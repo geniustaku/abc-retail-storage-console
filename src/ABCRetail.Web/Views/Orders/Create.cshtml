@@ -1,0 +1,80 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model Order
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Place an order";
+    var customers = ViewBag.Customers as List<SelectListItem> ?? [];
+    var products = ViewBag.Products as List<SelectListItem> ?? [];
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Orders</a> &middot; New</div>
+        <h1>Place an order</h1>
+        <p class="lede">
+            This writes the order to the Orders table, puts a message on the order-processing
+            queue and appends a line to today's log file on the Azure file share.
+        </p>
+    </div>
+</div>
+
+@if (customers.Count == 0 || products.Count == 0)
+{
+    <div class="panel">
+        <div class="empty">
+            <h3>An order needs a customer and a product</h3>
+            <p>
+                Register at least one customer and add at least one catalogue item before placing
+                an order.
+            </p>
+            <a class="btn" asp-controller="Customers" asp-action="Create">Register a customer</a>
+            <a class="btn" asp-controller="Products" asp-action="Create">Add a product</a>
+        </div>
+    </div>
+}
+else
+{
+    <form method="post" asp-action="Create" class="form-card">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-section">
+            <h3>Order detail</h3>
+            <p class="note">Stock is checked now, but only taken off the product once the queue message is processed.</p>
+
+            <div class="field">
+                <label asp-for="CustomerRowKey"></label>
+                <select asp-for="CustomerRowKey" asp-items="customers">
+                    <option value="">Select a customer</option>
+                </select>
+                <span asp-validation-for="CustomerRowKey" class="field-error"></span>
+            </div>
+
+            <div class="field">
+                <label asp-for="ProductKey"></label>
+                <select asp-for="ProductKey" asp-items="products">
+                    <option value="">Select a product</option>
+                </select>
+                <span asp-validation-for="ProductKey" class="field-error"></span>
+            </div>
+
+            <div class="field">
+                <label asp-for="Quantity"></label>
+                <input asp-for="Quantity" type="number" min="1" step="1" />
+                <span asp-validation-for="Quantity" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn--primary">Submit and queue</button>
+            <a class="btn btn--ghost" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

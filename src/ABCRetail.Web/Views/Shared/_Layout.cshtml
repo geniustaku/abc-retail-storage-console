@@ -62,6 +62,31 @@
                     Products
                 </a>
 
+                <div class="rail-label">Queues and Files</div>
+                <a class="@NavState("Orders")" asp-controller="Orders" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><path d="M3 6h18" />
+                        <path d="M16 10a4 4 0 0 1-8 0" />
+                    </svg>
+                    Orders
+                </a>
+                <a class="@NavState("Queues")" asp-controller="Queues" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
+                        <line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" />
+                        <line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                    Queue monitor
+                </a>
+                <a class="@NavState("Logs")" asp-controller="Logs" asp-action="Index">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6" /><line x1="8" y1="13" x2="16" y2="13" />
+                        <line x1="8" y1="17" x2="14" y2="17" />
+                    </svg>
+                    Log files
+                </a>
+
                 <div class="rail-label">Reference</div>
                 <a class="@NavState("Home", "About")" asp-controller="Home" asp-action="About">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">

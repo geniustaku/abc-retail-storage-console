@@ -14,16 +14,19 @@
         <h1>Storage Console</h1>
         <p class="lede">
             Customer profiles and the product catalogue are held in Azure Table Storage, while
-            product imagery is served from Azure Blob Storage. Every figure below is read live
-            from the <span class="mono">@Model.StorageAccountName</span> storage account.
+            product imagery is served from Azure Blob Storage. Order and inventory work is
+            queued on Azure Queues, and every action is logged to an Azure file share. Each
+            figure below is read live from the
+            <span class="mono">@Model.StorageAccountName</span> storage account.
         </p>
     </div>
     <div class="head-actions">
-        <a class="btn" asp-controller="Customers" asp-action="Create">New customer</a>
-        <a class="btn btn--primary" asp-controller="Products" asp-action="Create">New product</a>
+        <a class="btn" asp-controller="Products" asp-action="Create">New product</a>
+        <a class="btn btn--primary" asp-controller="Orders" asp-action="Create">Place an order</a>
     </div>
 </div>
 
+<div class="eyebrow" style="margin-bottom:11px">Azure Tables and Blob Storage</div>
 <div class="stat-grid">
     <div class="stat">
         <div class="label">
@@ -72,6 +75,85 @@
         <div class="foot">Price multiplied by stock on hand</div>
     </div>
 </div>
+
+<div class="eyebrow" style="margin-bottom:11px">Azure Queues and Azure Files</div>
+<div class="stat-grid">
+    <div class="stat">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            Orders placed
+        </div>
+        <div class="value">@Model.OrderCount</div>
+        <div class="foot">@Model.PendingOrders still waiting on the queue</div>
+    </div>
+
+    <div class="stat stat--accent">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            Messages queued
+        </div>
+        <div class="value">@Model.QueueDepth</div>
+        <div class="foot">Across order-processing and inventory-management</div>
+    </div>
+
+    <div class="stat">
+        <div class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
+            </svg>
+            Log files
+        </div>
+        <div class="value">@Model.LogFileCount</div>
+        <div class="foot">@(Model.ShareBytes < 1024 ? $"{Model.ShareBytes} B" : $"{Model.ShareBytes / 1024.0:N1} KB") on the file share</div>
+    </div>
+</div>
+
+@if (Model.RecentOrders.Count > 0)
+{
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Latest orders</h2>
+            <a class="btn btn--sm btn--ghost" asp-controller="Orders" asp-action="Index">View all</a>
+        </div>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Item</th>
+                        <th class="right">Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Model.RecentOrders)
+                    {
+                        <tr>
+                            <td>
+                                <div class="cell-primary">
+                                    <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.RowKey">@order.OrderNumber</a>
+                                </div>
+                                <div class="cell-sub">@order.PlacedOn.ToLocalTime().ToString("d MMM HH:mm")</div>
+                            </td>
+                            <td>@order.CustomerName</td>
+                            <td>@order.Quantity x @order.ProductName</td>
+                            <td class="right">@Money.Format(order.TotalPrice)</td>
+                            <td><span class="badge @(order.IsComplete ? "badge--done" : "badge--pending")">@order.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 <div class="split">
     <div class="panel">

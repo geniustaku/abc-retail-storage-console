@@ -1,0 +1,70 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model Order
+@{
+    ViewData["Title"] = Model.OrderNumber;
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow"><a asp-action="Index">Orders</a> &middot; @Model.Status</div>
+        <h1>@Model.OrderNumber</h1>
+        <p class="lede">@Model.Quantity x @Model.ProductName for @Model.CustomerName</p>
+    </div>
+    <div class="head-actions">
+        <span class="badge @(Model.IsComplete ? "badge--done" : "badge--pending")">@Model.Status</span>
+        @if (!Model.IsComplete)
+        {
+            <a class="btn btn--primary" asp-controller="Queues" asp-action="Index">Go to queue monitor</a>
+        }
+    </div>
+</div>
+
+<div class="split">
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Order detail</h2>
+        </div>
+        <div class="panel-body">
+            <dl class="detail-grid" style="margin:0">
+                <div class="kv"><dt>Customer</dt><dd>@Model.CustomerName</dd></div>
+                <div class="kv"><dt>Product</dt><dd>@Model.ProductName</dd></div>
+                <div class="kv"><dt>Category</dt><dd>@Model.ProductCategory</dd></div>
+                <div class="kv"><dt>Quantity</dt><dd>@Model.Quantity units</dd></div>
+                <div class="kv"><dt>Unit price</dt><dd>@Money.Format(Model.UnitPrice)</dd></div>
+                <div class="kv"><dt>Order total</dt><dd><span class="price">@Money.Format(Model.TotalPrice)</span></dd></div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Processing</h2>
+            <span class="hint">order-processing queue</span>
+        </div>
+        <div class="panel-body">
+            <div class="kv">
+                <dt>Placed</dt>
+                <dd class="mono" style="font-size:13px">@Model.PlacedOn.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd>
+            </div>
+            <div class="kv">
+                <dt>Processed</dt>
+                <dd class="mono" style="font-size:13px">
+                    @(Model.ProcessedOn?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                      ?? "Waiting on the queue")
+                </dd>
+            </div>
+            <div class="kv">
+                <dt>Table</dt>
+                <dd class="mono" style="font-size:13px">Orders</dd>
+            </div>
+            <div class="kv" style="border-bottom:none">
+                <dt>Row key</dt>
+                <dd class="mono" style="font-size:13px">@Model.RowKey</dd>
+            </div>
+        </div>
+    </div>
+</div>

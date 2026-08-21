@@ -17,6 +17,7 @@ STORAGE_ACCOUNT="stabcretailgm001"
 APP_SERVICE_PLAN="asp-abcretail-free"
 WEB_APP="abcretail-gm-cldv7112"
 BLOB_CONTAINER="product-images"
+FILE_SHARE="application-logs"
 
 echo "Resource group"
 az group create \
@@ -52,6 +53,22 @@ az storage container create \
     --connection-string "$CONNECTION_STRING" \
     --output none
 
+echo "Queues"
+az storage queue create --name order-processing --connection-string "$CONNECTION_STRING" --output none
+az storage queue create --name inventory-management --connection-string "$CONNECTION_STRING" --output none
+
+echo "File share for log files and generated reports"
+az storage share create \
+    --name "$FILE_SHARE" \
+    --quota 5 \
+    --connection-string "$CONNECTION_STRING" \
+    --output none
+
+az storage directory create --share-name "$FILE_SHARE" --name logs \
+    --connection-string "$CONNECTION_STRING" --output none
+az storage directory create --share-name "$FILE_SHARE" --name exports \
+    --connection-string "$CONNECTION_STRING" --output none
+
 echo "App Service plan (F1 is the free Linux tier)"
 az appservice plan create \
     --name "$APP_SERVICE_PLAN" \
@@ -85,6 +102,7 @@ az webapp config appsettings set \
     --settings \
         "ConnectionStrings__AzureStorage=$CONNECTION_STRING" \
         "AzureStorage__BlobContainer=$BLOB_CONTAINER" \
+        "AzureStorage__FileShare=$FILE_SHARE" \
         "ASPNETCORE_ENVIRONMENT=Production" \
     --output none
 

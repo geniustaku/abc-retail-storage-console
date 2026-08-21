@@ -1,0 +1,113 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model QueueMonitorViewModel
+@{
+    ViewData["Title"] = "Queue monitor";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Azure Queue Storage</div>
+        <h1>Queue monitor</h1>
+        <p class="lede">
+            Order processing and inventory movements are written to Azure Queues rather than
+            handled inline, so a burst of activity queues up instead of overwhelming the
+            application. Messages below are peeked, not received, so opening this page does
+            not hide them from the consumer.
+        </p>
+    </div>
+    <div class="head-actions">
+        <a class="btn btn--primary" asp-controller="Orders" asp-action="Create">Place an order</a>
+    </div>
+</div>
+
+<div class="queue-grid">
+    @foreach (var queue in Model.Queues)
+    {
+        <div class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>@queue.Name</h2>
+                    <span class="hint">@queue.Description</span>
+                </div>
+                <div class="depth">@queue.ApproximateCount<span>waiting</span></div>
+            </div>
+
+            @if (queue.Messages.Count == 0)
+            {
+                <div class="empty" style="padding:40px 20px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m22 4-10 10.01-3-3" />
+                    </svg>
+                    <h3>Nothing waiting</h3>
+                    <p>Every message on this queue has been processed.</p>
+                </div>
+            }
+            else
+            {
+                <div>
+                    @foreach (var (message, index) in queue.Messages.Select((m, i) => (m, i)))
+                    {
+                        <div class="msg @(index == 0 ? "msg--next" : "")">
+                            <div class="msg-seq">@(index + 1)</div>
+                            <div class="msg-body">
+                                <div class="msg-text">@message.Operation.Message</div>
+                                <div class="msg-meta">
+                                    <span class="kind">@message.Operation.Kind</span>
+                                    <span>Queued @message.Operation.QueuedAt.ToLocalTime().ToString("d MMM HH:mm:ss")</span>
+                                    @if (message.DequeueCount > 0)
+                                    {
+                                        <span>Attempt @(message.DequeueCount + 1)</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="form-actions">
+                <form method="post" asp-action="Process" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="queueName" value="@queue.Name" />
+                    <button type="submit" class="btn btn--primary" @(queue.ApproximateCount == 0 ? "disabled" : "")>
+                        Process next message
+                    </button>
+                </form>
+                <span class="spacer"></span>
+                @if (queue.ApproximateCount > 0)
+                {
+                    <form method="post" asp-action="Clear" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="queueName" value="@queue.Name" />
+                        <button type="submit" class="btn btn--sm btn--ghost">Clear queue</button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<div class="panel" style="margin-top:6px">
+    <div class="panel-head">
+        <h2>How a message moves</h2>
+        <span class="hint">At-least-once delivery</span>
+    </div>
+    <div class="panel-body prose" style="max-width:none">
+        <p>
+            Placing an order writes the entity to the Orders table and puts a message on
+            <code>order-processing</code>. Processing that message is what completes the order and
+            takes the stock off the product, which in turn queues a stock movement on
+            <code>inventory-management</code>. Nothing advances until its message is handled.
+        </p>
+        <p>
+            Receiving a message hides it for a visibility timeout rather than removing it. It is
+            deleted only once the work has succeeded, so a consumer that crashes mid-way leaves the
+            message to reappear and be retried. That is at-least-once delivery, and it is why the
+            order handler checks whether an order is already complete before acting on it.
+        </p>
+    </div>
+</div>

@@ -20,6 +20,18 @@ public class DashboardViewModel
 
     public string StorageAccountName { get; set; } = string.Empty;
 
+    public int OrderCount { get; set; }
+
+    public int PendingOrders { get; set; }
+
+    public int QueueDepth { get; set; }
+
+    public int LogFileCount { get; set; }
+
+    public long ShareBytes { get; set; }
+
+    public IReadOnlyList<Order> RecentOrders { get; set; } = [];
+
     public IReadOnlyList<Product> RecentProducts { get; set; } = [];
 
     public IReadOnlyList<CustomerProfile> RecentCustomers { get; set; } = [];

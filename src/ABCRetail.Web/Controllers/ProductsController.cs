@@ -17,11 +17,16 @@ public class ProductsController : Controller
 {
     private readonly ITableStorageService<Product> _products;
     private readonly IBlobStorageService _blobs;
+    private readonly IActivityRecorder _activity;
 
-    public ProductsController(ITableStorageService<Product> products, IBlobStorageService blobs)
+    public ProductsController(
+        ITableStorageService<Product> products,
+        IBlobStorageService blobs,
+        IActivityRecorder activity)
     {
         _products = products;
         _blobs = blobs;
+        _activity = activity;
     }
 
     public async Task<IActionResult> Index(string? category, CancellationToken cancellationToken)
@@ -70,9 +75,24 @@ public class ProductsController : Controller
             var upload = await _blobs.UploadAsync(image, cancellationToken);
             product.ImageBlobName = upload.BlobName;
             product.ImageUrl = upload.Url;
+
+            await _activity.RecordAsync(
+                QueueNames.InventoryManagement,
+                "ImageUploaded",
+                $"Uploading image \"{upload.BlobName}\" for {product.ProductName}",
+                product.RowKey,
+                cancellationToken);
         }
 
         await _products.AddAsync(product, cancellationToken);
+
+        await _activity.RecordAsync(
+            QueueNames.InventoryManagement,
+            "ProductCreated",
+            $"Inventory item created: {product.ProductName} in {product.PartitionKey}, " +
+            $"{product.StockLevel} units on hand",
+            product.RowKey,
+            cancellationToken);
 
         TempData["Message"] = product.HasImage
             ? $"{product.ProductName} was written to the Products table and its image uploaded to Blob Storage."
@@ -123,6 +143,24 @@ public class ProductsController : Controller
 
             product.ImageBlobName = upload.BlobName;
             product.ImageUrl = upload.Url;
+
+            await _activity.RecordAsync(
+                QueueNames.InventoryManagement,
+                "ImageUploaded",
+                $"Uploading image \"{upload.BlobName}\" for {product.ProductName}",
+                product.RowKey,
+                cancellationToken);
+        }
+
+        if (existing.StockLevel != product.StockLevel)
+        {
+            await _activity.RecordAsync(
+                QueueNames.InventoryManagement,
+                "StockAdjusted",
+                $"Stock adjusted for {product.ProductName}: " +
+                $"{existing.StockLevel} to {product.StockLevel}",
+                product.RowKey,
+                cancellationToken);
         }
 
         // The partition key is part of an entity's identity, so a category change is a
@@ -162,6 +200,13 @@ public class ProductsController : Controller
         // left in the table pointing at it.
         await _blobs.DeleteAsync(product.ImageBlobName, cancellationToken);
         await _products.DeleteAsync(category, id, cancellationToken);
+
+        await _activity.RecordAsync(
+            QueueNames.InventoryManagement,
+            "ProductRemoved",
+            $"Inventory item removed: {product.ProductName} from {category}",
+            product.RowKey,
+            cancellationToken);
 
         TempData["Message"] = $"{product.ProductName} was removed from the Products table and Blob Storage.";
         return RedirectToAction(nameof(Index));

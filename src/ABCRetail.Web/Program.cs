@@ -31,6 +31,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 var blobContainer = builder.Configuration["AzureStorage:BlobContainer"] ?? "product-images";
+var fileShare = builder.Configuration["AzureStorage:FileShare"] ?? "application-logs";
 
 builder.Services.AddControllersWithViews();
 
@@ -46,11 +47,31 @@ builder.Services.AddSingleton<ITableStorageService<Product>>(sp =>
         "Products",
         sp.GetRequiredService<ILogger<TableStorageService<Product>>>()));
 
+builder.Services.AddSingleton<ITableStorageService<Order>>(sp =>
+    new TableStorageService<Order>(
+        connectionString,
+        "Orders",
+        sp.GetRequiredService<ILogger<TableStorageService<Order>>>()));
+
 builder.Services.AddSingleton<IBlobStorageService>(sp =>
     new BlobStorageService(
         connectionString,
         blobContainer,
         sp.GetRequiredService<ILogger<BlobStorageService>>()));
+
+builder.Services.AddSingleton<IQueueStorageService>(sp =>
+    new QueueStorageService(
+        connectionString,
+        sp.GetRequiredService<ILogger<QueueStorageService>>()));
+
+builder.Services.AddSingleton<IFileShareService>(sp =>
+    new FileShareService(
+        connectionString,
+        fileShare,
+        sp.GetRequiredService<ILogger<FileShareService>>()));
+
+// Pairs the queue write with the log write so no caller can do one and forget the other.
+builder.Services.AddSingleton<IActivityRecorder, ActivityRecorder>();
 
 var app = builder.Build();
 

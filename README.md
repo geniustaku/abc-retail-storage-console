@@ -1,11 +1,11 @@
 # ABC Retail Storage Console
 
-An ASP.NET Core MVC web application that manages ABC Retail's customer profiles and
-product catalogue on Azure Storage. Customer and product records are held in **Azure
-Table Storage**; product imagery is held in **Azure Blob Storage** and served directly
-from the storage account.
+An ASP.NET Core MVC web application that runs ABC Retail's order processing on Azure
+Storage. Customer, product and order records are held in **Azure Table Storage**; product
+imagery is held in **Azure Blob Storage**; order and inventory work is queued on **Azure
+Queue Storage**; and every action is logged to an **Azure Files** share.
 
-**Genius Mhirizhonga** — CLDV7112, Cloud Development B, ICE Task 1.
+**Genius Mhirizhonga** — CLDV7112, Cloud Development B, ICE Tasks 1 and 2.
 
 Live: <https://abcretail-gm-cldv7112.azurewebsites.net>
 
@@ -28,7 +28,14 @@ each other and of the web tier.
 - Uploads product images to the `product-images` blob container and links each blob to
   its product record
 - Replaces and deletes blobs in step with the product they belong to
-- Reports live entity and blob counts on the dashboard, read from Azure on each request
+- Reports live entity, blob, queue and log-file counts on the dashboard, read from Azure
+  on each request
+- Places customer orders and queues them on `order-processing` for a consumer to handle
+- Queues catalogue and stock movements, including image uploads, on `inventory-management`
+- Monitors both queues, and processes messages off them to advance orders and move stock
+- Appends every action to a daily log file on the `application-logs` file share, and reads
+  those logs back in the browser
+- Writes inventory reports to the same share as CSV, downloadable from the site
 
 ## Storage design
 
@@ -77,6 +84,51 @@ which keeps thumbnail traffic off the App Service compute budget entirely. Where
 imagery was not already public, shared access signatures would be the alternative, at the
 cost of a signing round trip per image.
 
+### Orders
+
+| | |
+|---|---|
+| Partition key | `ORDER` |
+| Row key | Generated GUID |
+
+An order is written as `Submitted` and only advances once its queue message has been
+handled, so the queue drives the workflow rather than merely recording it.
+
+## Queue design
+
+Two queues, so that a backlog of one kind of work cannot delay the other:
+
+| Queue | Carries |
+|---|---|
+| `order-processing` | Orders waiting to be picked, packed and dispatched |
+| `inventory-management` | Catalogue and stock movements, including image uploads |
+
+A queue message body is a string, so each one carries JSON holding a readable description
+for the operator alongside the reference a consumer needs. One message therefore serves
+both the monitoring screen and the processing code without a second lookup.
+
+Receiving a message hides it for a visibility timeout rather than deleting it; it is
+deleted only once the work has succeeded, so a consumer that fails part way through leaves
+the message to reappear and be retried. That is at-least-once delivery, not exactly-once,
+which is why the order handler checks whether an order is already complete before acting
+on it.
+
+## Log files on Azure Files
+
+Every action is appended to `logs/app-YYYY-MM-DD.log` on the `application-logs` share, and
+generated inventory reports are written to `exports/`. A file share was chosen over a blob
+container because it is a real SMB file system: it can be mounted as a drive and read with
+ordinary tools, which is what an operations team wants from a log.
+
+Azure Files has no append operation of its own, unlike an append blob. Adding a line means
+reading the file's current length, growing it by the size of the new bytes, and writing
+those bytes into the range that growth created. That sequence is not atomic, so writers are
+serialised within the application; across several instances the correct answer would be a
+lease on the file.
+
+A failure writing to the share is logged to the platform and swallowed. A customer losing
+their order because the log file was busy would be the worse outcome.
+
 ### Ordering of writes
 
 Creating a product uploads the blob before writing the table entity; deleting one removes
@@ -88,23 +140,32 @@ which is the cheaper of the two failures to reconcile.
 
 ```
 src/ABCRetail.Web
-├── Controllers          Home, Customers, Products
-├── Models               CustomerProfile, Product (both implement ITableEntity)
+├── Controllers          Home, Customers, Products, Orders, Queues, Logs
+├── Models               CustomerProfile, Product, Order (all implement ITableEntity)
 ├── Services
 │   ├── ITableStorageService<T> / TableStorageService<T>    Azure.Data.Tables
-│   └── IBlobStorageService / BlobStorageService            Azure.Storage.Blobs
+│   ├── IBlobStorageService / BlobStorageService            Azure.Storage.Blobs
+│   ├── IQueueStorageService / QueueStorageService          Azure.Storage.Queues
+│   ├── IFileShareService / FileShareService                Azure.Storage.Files.Shares
+│   └── IActivityRecorder / ActivityRecorder                pairs a queue write with a log write
 ├── Views                Razor views with a hand-written stylesheet
 └── wwwroot              CSS and the upload preview script
 ```
 
-Both storage services sit behind interfaces resolved through dependency injection.
-Neither the controllers nor the views hold a reference to an Azure SDK type, so the queue
-and file share work that follows is additive rather than a rewrite.
+All four storage services sit behind interfaces resolved through dependency injection.
+Neither the controllers nor the views hold a reference to an Azure SDK type, which is why
+adding Queues and Files for Task 2 was additive rather than a rewrite, and why replacing
+the in-application queue consumer with a background worker or an Azure Function would need
+no change to anything that produces messages.
 
-The clients are registered as singletons. `TableClient` and `BlobContainerClient` are
-thread safe and pool their connections, so one instance for the lifetime of the
-application avoids the socket exhaustion that comes from constructing a client per
-request.
+Controllers do not talk to the queue and the file share separately. They call
+`IActivityRecorder`, which writes the queue message and the log line together, so no caller
+can queue work and forget to log it.
+
+Every client is registered as a singleton. `TableClient`, `BlobContainerClient`,
+`QueueClient` and `ShareClient` are all thread safe and pool their connections, so one
+instance for the lifetime of the application avoids the socket exhaustion that comes from
+constructing a client per request.
 
 ## Azure resources
 
@@ -112,6 +173,10 @@ request.
 |---|---|---|
 | Resource group | `rg-abcretail-cldv7112` | South Africa North |
 | Storage account | `stabcretailgm001` | Standard LRS, StorageV2, Hot |
+| Tables | `CustomerProfiles`, `Products`, `Orders` | |
+| Blob container | `product-images` | Blob-level anonymous read |
+| Queues | `order-processing`, `inventory-management` | |
+| File share | `application-logs` | 5 GiB quota, `logs/` and `exports/` |
 | App Service plan | `asp-abcretail-free` | F1, Linux |
 | Web app | `abcretail-gm-cldv7112` | .NET 10 |
 
