@@ -489,3 +489,6 @@ token.txt
 # deployment that was missing a view. This re-includes them.
 !src/ABCRetail.Web/Views/Logs/
 !src/ABCRetail.Web/Views/Logs/*.cshtml
+
+# Uncropped originals of the submission screenshots, kept locally only.
+docs/project1-screenshots/original/
