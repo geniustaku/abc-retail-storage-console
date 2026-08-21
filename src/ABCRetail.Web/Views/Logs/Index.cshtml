@@ -1,0 +1,151 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model FileShareViewModel
+@{
+    ViewData["Title"] = "Log files";
+
+    string SizeOf(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:N1} KB",
+        _ => $"{bytes / 1024.0 / 1024.0:N1} MB"
+    };
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Azure Files &middot; @Model.ShareName</div>
+        <h1>Log files</h1>
+        <p class="lede">
+            Every action the application takes is appended to a daily log file on an Azure file
+            share. A share is used rather than a blob because it is a real SMB file system: the
+            operations team can mount it as a drive and read the logs with ordinary tools.
+        </p>
+    </div>
+    <div class="head-actions">
+        <form method="post" asp-action="Export" style="display:flex;gap:8px">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn" name="report" value="customers">Customer report</button>
+            <button type="submit" class="btn" name="report" value="orders">Order report</button>
+            <button type="submit" class="btn btn--primary" name="report" value="inventory">Inventory report</button>
+        </form>
+    </div>
+</div>
+
+<div class="share-layout">
+    <div>
+        <div class="panel">
+            <div class="panel-head">
+                <h2>logs</h2>
+                <span class="hint">@Model.LogFiles.Count file@(Model.LogFiles.Count == 1 ? "" : "s")</span>
+            </div>
+            @if (Model.LogFiles.Count == 0)
+            {
+                <div class="empty" style="padding:32px 16px">
+                    <h3>No log files yet</h3>
+                    <p>The first logged action creates today's file.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var file in Model.LogFiles)
+                {
+                    <a class="file-row @(Model.SelectedPath == file.Path ? "active" : "")"
+                       asp-action="Index" asp-route-directory="logs" asp-route-file="@file.Name">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
+                        </svg>
+                        <span class="fname">@file.Name</span>
+                        <span class="fsize">@file.ReadableSize</span>
+                    </a>
+                }
+            }
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h2>exports</h2>
+                <span class="hint">@Model.Exports.Count file@(Model.Exports.Count == 1 ? "" : "s")</span>
+            </div>
+            @if (Model.Exports.Count == 0)
+            {
+                <div class="empty" style="padding:32px 16px">
+                    <h3>No reports yet</h3>
+                    <p>Writing a report saves a named CSV file to this directory on the share.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var file in Model.Exports)
+                {
+                    <a class="file-row @(Model.SelectedPath == file.Path ? "active" : "")"
+                       asp-action="Index" asp-route-directory="exports" asp-route-file="@file.Name">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
+                            <line x1="8" y1="17" x2="16" y2="17" /><line x1="8" y1="13" x2="16" y2="13" />
+                        </svg>
+                        <span class="fname">@file.Name</span>
+                        <span class="fsize">@file.ReadableSize</span>
+                    </a>
+                }
+            }
+        </div>
+
+        <div class="panel">
+            <div class="panel-body">
+                <div class="kv" style="border-bottom:none;padding-top:0">
+                    <dt>Share</dt>
+                    <dd class="mono" style="font-size:13px">@Model.ShareName</dd>
+                </div>
+                <div class="kv" style="border-bottom:none">
+                    <dt>Stored</dt>
+                    <dd>@SizeOf(Model.TotalBytes) across @(Model.LogFiles.Count + Model.Exports.Count) files</dd>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <h2>@(Model.SelectedPath ?? "No file selected")</h2>
+                <span class="hint">Newest entries first</span>
+            </div>
+            @if (Model.SelectedPath is not null)
+            {
+                var parts = Model.SelectedPath.Split('/', 2);
+                <a class="btn btn--sm" asp-action="Download" asp-route-directory="@parts[0]" asp-route-file="@parts[1]">Download</a>
+            }
+        </div>
+
+        @if (Model.SelectedContent.Count == 0)
+        {
+            <div class="empty" style="padding:60px 20px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" />
+                </svg>
+                <h3>Nothing to show</h3>
+                <p>Select a file, or take an action elsewhere in the application to write the first log line.</p>
+            </div>
+        }
+        else
+        {
+            <div class="log-view">
+                @foreach (var line in Model.SelectedContent)
+                {
+                    <div class="log-row">
+                        @if (line.Level.Length > 0)
+                        {
+                            <span class="log-time">@line.Timestamp</span>
+                            <span class="log-level @line.Level.ToLowerInvariant()">@line.Level</span>
+                        }
+                        <span class="log-text">@line.Text</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

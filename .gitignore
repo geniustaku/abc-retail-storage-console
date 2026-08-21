@@ -483,3 +483,9 @@ $RECYCLE.BIN/
 
 # Local credential file, never committed
 token.txt
+
+# The [Ll]ogs/ rule above is meant for build output. It also matched the MVC views for
+# the log file browser, which silently kept them out of the repository and produced a
+# deployment that was missing a view. This re-includes them.
+!src/ABCRetail.Web/Views/Logs/
+!src/ABCRetail.Web/Views/Logs/*.cshtml
