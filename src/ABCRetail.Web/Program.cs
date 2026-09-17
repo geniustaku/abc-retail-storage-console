@@ -73,6 +73,10 @@ builder.Services.AddSingleton<IFileShareService>(sp =>
 // Pairs the queue write with the log write so no caller can do one and forget the other.
 builder.Services.AddSingleton<IActivityRecorder, ActivityRecorder>();
 
+// The four Azure Functions are reached over HTTP. AddHttpClient gives the client a
+// pooled handler, which avoids the socket exhaustion of newing up HttpClient per call.
+builder.Services.AddHttpClient<IStorageFunctionsClient, StorageFunctionsClient>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

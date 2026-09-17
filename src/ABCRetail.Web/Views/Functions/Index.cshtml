@@ -1,0 +1,142 @@
+@*
+    ABC Retail - Azure Storage Web Application
+    Author: Genius Mhirizhonga
+    Module: CLDV7112 - Cloud Development B
+*@
+@model FunctionsViewModel
+@{
+    ViewData["Title"] = "Azure Functions";
+}
+
+<div class="page-head">
+    <div>
+        <div class="eyebrow">Azure Functions &middot; func-abcretail-gm</div>
+        <h1>Serverless storage functions</h1>
+        <p class="lede">
+            Four Azure Functions now sit between this application and the storage account.
+            The application posts to a function and the function does the storage work, so
+            this work scales on its own and is billed per execution rather than sitting
+            inside the App Service.
+        </p>
+    </div>
+    <div class="head-actions">
+        <form method="post" asp-action="Run">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn--primary" @(Model.IsConfigured ? "" : "disabled")>
+                Run all four functions
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (!Model.IsConfigured)
+{
+    <div class="panel">
+        <div class="empty" style="padding:44px 20px">
+            <h3>The function endpoint is not configured here</h3>
+            <p>
+                Set Functions:BaseUrl and Functions:Key for this environment. The key is held
+                as an application setting and never in the repository.
+            </p>
+        </div>
+    </div>
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <h2>What each function does</h2>
+        <span class="hint">@(string.IsNullOrWhiteSpace(Model.BaseUrl) ? "not configured" : Model.BaseUrl)</span>
+    </div>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Function</th>
+                    <th>Route</th>
+                    <th>Storage service it calls</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="cell-primary">StoreTableEntity</td>
+                    <td class="mono">POST /api/tables</td>
+                    <td>Azure Table Storage</td>
+                </tr>
+                <tr>
+                    <td class="cell-primary">UploadBlob</td>
+                    <td class="mono">POST /api/blobs</td>
+                    <td>Azure Blob Storage</td>
+                </tr>
+                <tr>
+                    <td class="cell-primary">QueueTransaction</td>
+                    <td class="mono">POST and GET /api/queue</td>
+                    <td>Azure Queue Storage, written to and read from</td>
+                </tr>
+                <tr>
+                    <td class="cell-primary">WriteFile</td>
+                    <td class="mono">POST /api/files</td>
+                    <td>Azure Files</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model.HasRun)
+{
+    <div class="panel">
+        <div class="panel-head">
+            <h2>Results of the last run</h2>
+            <span class="hint">@Model.SuccessCount of @Model.Results.Count calls succeeded</span>
+        </div>
+        <div class="panel-body">
+            @foreach (var result in Model.Results)
+            {
+                <div style="margin-bottom:22px">
+                    <div class="identity" style="margin-bottom:8px">
+                        <span class="badge @(result.Success ? "badge--ok" : "badge--out")">
+                            @(result.Success ? "HTTP " + result.StatusCode : (result.StatusCode == 0 ? "failed" : "HTTP " + result.StatusCode))
+                        </span>
+                        <div>
+                            <div class="cell-primary">@result.Name</div>
+                            <div class="cell-sub">@result.Service &middot; @result.ElapsedMilliseconds ms &middot; <span class="mono">@result.Endpoint</span></div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(result.Error))
+                    {
+                        <div class="validation-summary-errors">@result.Error</div>
+                    }
+                    else
+                    {
+                        <pre class="blob-url" style="white-space:pre-wrap">@result.ResponseBody</pre>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<div class="panel">
+    <div class="panel-head">
+        <h2>Why this is worth doing</h2>
+        <span class="hint">Scalability, cost and cloud suitability</span>
+    </div>
+    <div class="panel-body prose" style="max-width:none">
+        <p>
+            The storage work used to run inside the web application, so it competed with page
+            rendering for the same compute. Moving it into functions means a burst of storage
+            work scales out on its own without the web tier being resized to cope with it.
+        </p>
+        <p>
+            The cost model changes too. The App Service is paid for whether or not anything is
+            happening, while the consumption plan behind these functions charges per execution
+            and includes a free monthly grant. Work that happens in bursts is cheaper there
+            than in a server that has to be sized for the peak.
+        </p>
+        <p>
+            Each function is also independently deployable. A change to how blobs are written
+            no longer means redeploying the whole site, which is the practical benefit of
+            splitting the work up rather than the theoretical one.
+        </p>
+    </div>
+</div>
